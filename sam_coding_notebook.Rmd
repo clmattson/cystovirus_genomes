@@ -15,7 +15,7 @@ Fastq files (gzipped) are here: http://slimsdata.genomecenter.ucdavis.edu/Data/7
 
 FASTQ's are in "Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/MiSeqAnalysis/"
 
-Ignore 
+Ignore sample labels for now.
 
 ```{bash}
 ssh sldmunoz@crick.cse.ucdavis.edu
