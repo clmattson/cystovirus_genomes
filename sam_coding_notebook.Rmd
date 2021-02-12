@@ -32,6 +32,12 @@ wget -r -nH -nc -np -R index.html*    “http://slimsdata.genomecenter.ucdavis.e
 #Actually run as a job
 sbatch -c1 --mem=1g -t05:00:00 --wrap="wget -r -nH -nc -np -R index.html* http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/"
 
+#Check on progress and successful upload
+tail slurm-833314.out
+#FINISHED --2021-02-12 11:26:14--
+#Total wall clock time: 6m 1s
+#Downloaded: 28256 files, 4.5G in 55s (82.7 MB/s)
+
 ```
 
 ### Independent Runs from NYU Genome Center
