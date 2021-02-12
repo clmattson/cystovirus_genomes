@@ -1700,10 +1700,75 @@ $(document).ready(function () {
 
 <!-- rnb-text-begin -->
 <p>#Cystovirus Genome Sequecing</p>
-<p>#1. Data</p>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<div id="illumina-sequencing-run" class="section level3">
+<h3>Illumina Sequencing Run</h3>
+<p>Illumina PE 75, MiSeq sample ‘AW020720’ run at the UCD GC. 14.8 M reads passing filter (of which 21% are PhiX), and an overall Q30 &gt; 96% Data received via email February 20, 2020 at 1:47:58</p>
+<p>Details on your run can be found at this link: <a href="https://slims.bioinformatics.ucdavis.edu/solexa/view_run.php?id=3996" class="uri">https://slims.bioinformatics.ucdavis.edu/solexa/view_run.php?id=3996</a> Fastq files (gzipped) are here: <a href="http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/" class="uri">http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/</a></p>
+<p>FASTQ’s are in “Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/MiSeqAnalysis/”</p>
+<p>Ignore</p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgYmFzaFxuc3NoIHNsZG11bm96QGNyaWNrLmNzZS51Y2RhdmlzLmVkdVxuXG5jZCAvZ3JvdXAvZGlhem11bm96bGFiL2RhdGEvXG5cbm1rZGlyIGN5c3RvX2dlbm9tZV9zZXF1ZW5jZXMvXG5cbmNkIC9ncm91cC9kaWF6bXVub3psYWIvZGF0YS9jeXN0b19nZW5vbWVfc2VxdWVuY2VzL1xuXG4jRG93bmxvYWQgZGF0YSBmcm9tIEdDIFNlcnZlclxud2dldCAtciAtbkggLW5jIC1ucCAtUiBpbmRleC5odG1sKiAgICDigJxodHRwOi8vc2xpbXNkYXRhLmdlbm9tZWNlbnRlci51Y2RhdmlzLmVkdS9EYXRhLzdoNnFiNnNtbTQvMjAwMjE5X00wMDM4NF8wMjMwX01TODU2NTExMi0xNTBWMy9cIlxuXG4jQWN0dWFsbHkgcnVuIGFzIGEgam9iXG5zYmF0Y2ggLWMxIC0tbWVtPTFnIC10MDU6MDA6MDAgLS13cmFwPVwid2dldCAtciAtbkggLW5jIC1ucCAtUiBpbmRleC5odG1sKiBodHRwOi8vc2xpbXNkYXRhLmdlbm9tZWNlbnRlci51Y2RhdmlzLmVkdS9EYXRhLzdoNnFiNnNtbTQvMjAwMjE5X00wMDM4NF8wMjMwX01TODU2NTExMi0xNTBWMy9cIlxuXG5gYGAifQ== -->
+<pre class="bash"><code>ssh sldmunoz@crick.cse.ucdavis.edu
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiQ3lzdG92aXJ1cyBHZW5vbWUgU2VxdWVuY2luZyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKI0N5c3RvdmlydXMgR2Vub21lIFNlcXVlY2luZwoKIzEuIERhdGEgCgo=</div>
+cd /group/diazmunozlab/data/
+
+mkdir cysto_genome_sequences/
+
+cd /group/diazmunozlab/data/cysto_genome_sequences/
+
+#Download data from GC Server
+wget -r -nH -nc -np -R index.html*    “http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/&quot;
+
+#Actually run as a job
+sbatch -c1 --mem=1g -t05:00:00 --wrap=&quot;wget -r -nH -nc -np -R index.html* http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/&quot;
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="independent-runs-from-nyu-genome-center" class="section level3">
+<h3>Independent Runs from NYU Genome Center</h3>
+<p>(to be used later)</p>
+</div>
+</div>
+<div id="analysis-of-lab-generated-sequence-data" class="section level2">
+<h2>Analysis of Lab Generated Sequence Data</h2>
+<div id="proposed-pipeline" class="section level3">
+<h3>Proposed pipeline:</h3>
+<ol style="list-style-type: decimal">
+<li>Read QC, potential adapter and barcode removal</li>
+<li>Potential removal of bacterial host reads: evaluate whether necessary</li>
+<li>Genome assembly with spades with –meta option or the new MetaviralSPAdes<br />
+</li>
+<li>Filter generated contigs by size (see segments below), quality, and closely related matches</li>
+</ol>
+</div>
+</div>
+<div id="reference-information" class="section level2">
+<h2>Reference information</h2>
+</div>
+<div id="phage" class="section level2">
+<h2>Phage</h2>
+<p>phi-6 is the cannonical member of the Cystoviridae: <a href="https://viralzone.expasy.org/165" class="uri">https://viralzone.expasy.org/165</a></p>
+<p>It has a tri-segmented genome, with a small, medium, and large segment (L=6374 nt; M=4063 nt, S = 2948 nt): <a href="https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10879" class="uri">https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10879</a></p>
+</div>
+<div id="host" class="section level2">
+<h2>Host</h2>
+<p>The host used to isolate and propagate all these cystoviruses is Pseudomonas syringae pv. phaseolicola strain HB10Y (ATCC)</p>
+<p>Genome is available here: <a href="https://www.ncbi.nlm.nih.gov/nuccore/NZ_LGKX01000037.1" class="uri">https://www.ncbi.nlm.nih.gov/nuccore/NZ_LGKX01000037.1</a></p>
+</div>
+<div id="discovery-of-cystoviruses-in-metagenomes" class="section level2">
+<h2>Discovery of Cystoviruses in Metagenomes</h2>
+<p>If the analysis of our sequence generated in house is not enough, searching metagenomes (random hexamer primed RNAseq is prob. best best). Feel free to employ any tools you have knowledge of.</p>
+<p>Paper that did metagenomic search that yielded Cystoviruses: <a href="https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1002409" class="uri">https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1002409</a></p>
+<p>Note plant, water, and soil RNAseq data sets prob. are best bet.</p>
+<!-- rnb-text-end -->
+</div>
+
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiQ3lzdG92aXJ1cyBHZW5vbWUgU2VxdWVuY2luZyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKI0N5c3RvdmlydXMgR2Vub21lIFNlcXVlY2luZwoKIyMgRGF0YSAKCiMjIyBJbGx1bWluYSBTZXF1ZW5jaW5nIFJ1bgpJbGx1bWluYSBQRSA3NSwgTWlTZXEgc2FtcGxlICdBVzAyMDcyMCcgcnVuIGF0IHRoZSBVQ0QgR0MuIDE0LjggTSByZWFkcyBwYXNzaW5nIGZpbHRlciAob2Ygd2hpY2ggMjElIGFyZSBQaGlYKSwgYW5kIGFuIG92ZXJhbGwgUTMwID4gOTYlIERhdGEgcmVjZWl2ZWQgdmlhIGVtYWlsIEZlYnJ1YXJ5IDIwLCAyMDIwIGF0IDE6NDc6NTgKCkRldGFpbHMgb24geW91ciBydW4gY2FuIGJlIGZvdW5kIGF0IHRoaXMgbGluazogaHR0cHM6Ly9zbGltcy5iaW9pbmZvcm1hdGljcy51Y2RhdmlzLmVkdS9zb2xleGEvdmlld19ydW4ucGhwP2lkPTM5OTYKRmFzdHEgZmlsZXMgKGd6aXBwZWQpIGFyZSBoZXJlOiBodHRwOi8vc2xpbXNkYXRhLmdlbm9tZWNlbnRlci51Y2RhdmlzLmVkdS9EYXRhLzdoNnFiNnNtbTQvMjAwMjE5X00wMDM4NF8wMjMwX01TODU2NTExMi0xNTBWMy8KCkZBU1RRJ3MgYXJlIGluICJEYXRhLzdoNnFiNnNtbTQvMjAwMjE5X00wMDM4NF8wMjMwX01TODU2NTExMi0xNTBWMy9NaVNlcUFuYWx5c2lzLyIKCklnbm9yZSAKCmBgYHtiYXNofQpzc2ggc2xkbXVub3pAY3JpY2suY3NlLnVjZGF2aXMuZWR1CgpjZCAvZ3JvdXAvZGlhem11bm96bGFiL2RhdGEvCgpta2RpciBjeXN0b19nZW5vbWVfc2VxdWVuY2VzLwoKY2QgL2dyb3VwL2RpYXptdW5vemxhYi9kYXRhL2N5c3RvX2dlbm9tZV9zZXF1ZW5jZXMvCgojRG93bmxvYWQgZGF0YSBmcm9tIEdDIFNlcnZlcgp3Z2V0IC1yIC1uSCAtbmMgLW5wIC1SIGluZGV4Lmh0bWwqICAgIOKAnGh0dHA6Ly9zbGltc2RhdGEuZ2Vub21lY2VudGVyLnVjZGF2aXMuZWR1L0RhdGEvN2g2cWI2c21tNC8yMDAyMTlfTTAwMzg0XzAyMzBfTVM4NTY1MTEyLTE1MFYzLyIKCiNBY3R1YWxseSBydW4gYXMgYSBqb2IKc2JhdGNoIC1jMSAtLW1lbT0xZyAtdDA1OjAwOjAwIC0td3JhcD0id2dldCAtciAtbkggLW5jIC1ucCAtUiBpbmRleC5odG1sKiBodHRwOi8vc2xpbXNkYXRhLmdlbm9tZWNlbnRlci51Y2RhdmlzLmVkdS9EYXRhLzdoNnFiNnNtbTQvMjAwMjE5X00wMDM4NF8wMjMwX01TODU2NTExMi0xNTBWMy8iCgpgYGAKCiMjIyBJbmRlcGVuZGVudCBSdW5zIGZyb20gTllVIEdlbm9tZSBDZW50ZXIKKHRvIGJlIHVzZWQgbGF0ZXIpCgojIyBBbmFseXNpcyBvZiBMYWIgR2VuZXJhdGVkIFNlcXVlbmNlIERhdGEgIAoKIyMjIFByb3Bvc2VkIHBpcGVsaW5lOgoKMS4gUmVhZCBRQywgcG90ZW50aWFsIGFkYXB0ZXIgYW5kIGJhcmNvZGUgcmVtb3ZhbAoyLiBQb3RlbnRpYWwgcmVtb3ZhbCBvZiBiYWN0ZXJpYWwgaG9zdCByZWFkczogZXZhbHVhdGUgd2hldGhlciBuZWNlc3NhcnkgCjMuIEdlbm9tZSBhc3NlbWJseSB3aXRoIHNwYWRlcyB3aXRoIC0tbWV0YSBvcHRpb24gb3IgdGhlIG5ldyBNZXRhdmlyYWxTUEFkZXMgIAo0LiBGaWx0ZXIgZ2VuZXJhdGVkIGNvbnRpZ3MgYnkgc2l6ZSAoc2VlIHNlZ21lbnRzIGJlbG93KSwgcXVhbGl0eSwgYW5kIGNsb3NlbHkgcmVsYXRlZCBtYXRjaGVzCgojIyBSZWZlcmVuY2UgaW5mb3JtYXRpb24KCiMjIFBoYWdlCnBoaS02IGlzIHRoZSBjYW5ub25pY2FsIG1lbWJlciBvZiB0aGUgQ3lzdG92aXJpZGFlOgpodHRwczovL3ZpcmFsem9uZS5leHBhc3kub3JnLzE2NQoKSXQgaGFzIGEgdHJpLXNlZ21lbnRlZCBnZW5vbWUsIHdpdGggYSBzbWFsbCwgbWVkaXVtLCBhbmQgbGFyZ2Ugc2VnbWVudCAoTD02Mzc0IG50OyBNPTQwNjMgbnQsIFMgPSAyOTQ4IG50KToKaHR0cHM6Ly93d3cubmNiaS5ubG0ubmloLmdvdi9nZW5vbWVzL0dlbm9tZXNHcm91cC5jZ2k/dGF4aWQ9MTA4NzkKCgojIyBIb3N0ClRoZSBob3N0IHVzZWQgdG8gaXNvbGF0ZSBhbmQgcHJvcGFnYXRlIGFsbCB0aGVzZSBjeXN0b3ZpcnVzZXMgaXMgUHNldWRvbW9uYXMgc3lyaW5nYWUgcHYuIHBoYXNlb2xpY29sYSBzdHJhaW4gSEIxMFkgKEFUQ0MpCgpHZW5vbWUgaXMgYXZhaWxhYmxlIGhlcmU6Cmh0dHBzOi8vd3d3Lm5jYmkubmxtLm5paC5nb3YvbnVjY29yZS9OWl9MR0tYMDEwMDAwMzcuMQoKIyMgRGlzY292ZXJ5IG9mIEN5c3RvdmlydXNlcyBpbiBNZXRhZ2Vub21lcwpJZiB0aGUgYW5hbHlzaXMgb2Ygb3VyIHNlcXVlbmNlIGdlbmVyYXRlZCBpbiBob3VzZSBpcyBub3QgZW5vdWdoLCBzZWFyY2hpbmcgbWV0YWdlbm9tZXMgKHJhbmRvbSBoZXhhbWVyIHByaW1lZCBSTkFzZXEgaXMgcHJvYi4gYmVzdCBiZXN0KS4gRmVlbCBmcmVlIHRvIGVtcGxveSBhbnkgdG9vbHMgeW91IGhhdmUga25vd2xlZGdlIG9mLgoKUGFwZXIgdGhhdCBkaWQgbWV0YWdlbm9taWMgc2VhcmNoIHRoYXQgeWllbGRlZCBDeXN0b3ZpcnVzZXM6Cmh0dHBzOi8vam91cm5hbHMucGxvcy5vcmcvcGxvc2Jpb2xvZ3kvYXJ0aWNsZT9pZD0xMC4xMzcxL2pvdXJuYWwucGJpby4xMDAyNDA5CgpOb3RlIHBsYW50LCB3YXRlciwgYW5kIHNvaWwgUk5Bc2VxIGRhdGEgc2V0cyBwcm9iLiBhcmUgYmVzdCBiZXQuIA==</div>
 
 
 

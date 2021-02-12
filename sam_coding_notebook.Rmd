@@ -5,5 +5,67 @@ output: html_notebook
 
 #Cystovirus Genome Sequecing
 
-#1. Data 
+## Data 
 
+### Illumina Sequencing Run
+Illumina PE 75, MiSeq sample 'AW020720' run at the UCD GC. 14.8 M reads passing filter (of which 21% are PhiX), and an overall Q30 > 96% Data received via email February 20, 2020 at 1:47:58
+
+Details on your run can be found at this link: https://slims.bioinformatics.ucdavis.edu/solexa/view_run.php?id=3996
+Fastq files (gzipped) are here: http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/
+
+FASTQ's are in "Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/MiSeqAnalysis/"
+
+Ignore 
+
+```{bash}
+ssh sldmunoz@crick.cse.ucdavis.edu
+
+cd /group/diazmunozlab/data/
+
+mkdir cysto_genome_sequences/
+
+cd /group/diazmunozlab/data/cysto_genome_sequences/
+
+#Download data from GC Server
+wget -r -nH -nc -np -R index.html*    “http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/"
+
+#Actually run as a job
+sbatch -c1 --mem=1g -t05:00:00 --wrap="wget -r -nH -nc -np -R index.html* http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/"
+
+```
+
+### Independent Runs from NYU Genome Center
+(to be used later)
+
+## Analysis of Lab Generated Sequence Data  
+
+### Proposed pipeline:
+
+1. Read QC, potential adapter and barcode removal
+2. Potential removal of bacterial host reads: evaluate whether necessary 
+3. Genome assembly with spades with --meta option or the new MetaviralSPAdes  
+4. Filter generated contigs by size (see segments below), quality, and closely related matches
+
+## Reference information
+
+## Phage
+phi-6 is the cannonical member of the Cystoviridae:
+https://viralzone.expasy.org/165
+
+It has a tri-segmented genome, with a small, medium, and large segment (L=6374 nt; M=4063 nt, S = 2948 nt):
+https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10879
+
+
+## Host
+The host used to isolate and propagate all these cystoviruses is Pseudomonas syringae pv. phaseolicola strain HB10Y (ATCC)
+
+Genome is available here:
+https://www.ncbi.nlm.nih.gov/nuccore/NZ_LGKX01000037.1
+
+## Discovery of Cystoviruses in Metagenomes
+If the analysis of our sequence generated in house is not enough, searching metagenomes (random hexamer primed RNAseq is prob. best best). Feel free to employ any tools you have knowledge of.
+
+Paper that did metagenomic search that yielded Cystoviruses:
+https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1002409
+
+Note plant, water, and soil RNAseq data sets prob. are best bet. 
