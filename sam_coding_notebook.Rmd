@@ -7,8 +7,46 @@ output: html_notebook
 
 ## Data 
 
-### Illumina Sequencing Run
-Illumina PE 75, MiSeq sample 'AW020720' run at the UCD GC. 14.8 M reads passing filter (of which 21% are PhiX), and an overall Q30 > 96% Data received via email February 20, 2020 at 1:47:58
+### Illumina Sequencing Runs
+
+#### Run AW070319
+Illumina PE 150, MiSeq library 'AW070319' run at the UCD GC. 12.3M reads pF (of which 9.6% are PhiX) with an overall Q30>89.4%. Data received by email on July 10, 2019 at 10:09am  
+
+Run details: 
+https://slims.bioinformatics.ucdavis.edu/solexa/view_run.php?id=3673
+Demultiplexed fastq files are here: http://slimsdata.genomecenter.ucdavis.edu/Data/uod8hs5jdq/190708_M02034_0427_MS8249685-300V2/MiSeqAnalysis/
+
+Now downloading to Crick Cluster
+
+```{bash}
+ssh sldmunoz@crick.cse.ucdavis.edu
+
+cd /group/diazmunozlab/data/
+
+mkdir cysto_genome_sequences/
+
+cd /group/diazmunozlab/data/cysto_genome_sequences/
+
+mkdir AW070319
+
+cd AW070319
+
+#Download data from GC Server
+wget -r -nH -nc -np -R index.html*    “http://slimsdata.genomecenter.ucdavis.edu/Data/uod8hs5jdq/190708_M02034_0427_MS8249685-300V2/"
+
+#Actually run as a job
+sbatch -c1 --mem=1g -t05:00:00 --wrap="wget -r -nH -nc -np -R index.html* http://slimsdata.genomecenter.ucdavis.edu/Data/uod8hs5jdq/190708_M02034_0427_MS8249685-300V2/"
+
+#Check on progress and successful upload
+tail slurm-976115.out
+#FINISHED --2021-04-06 12:58:34--
+#Total wall clock time: 3m 27s
+#Downloaded: 697 files, 5.1G in 2m 42s (32.6 MB/s)
+```
+
+
+#### Run AW020720
+Illumina PE 75, MiSeq sample 'AW020720' run at the UCD GC. 14.8 M reads passing filter (of which 21% are PhiX), and an overall Q30 > 96%. Data received via email February 20, 2020 at 1:47:58
 
 Details on your run can be found at this link: https://slims.bioinformatics.ucdavis.edu/solexa/view_run.php?id=3996
 Fastq files (gzipped) are here: http://slimsdata.genomecenter.ucdavis.edu/Data/7h6qb6smm4/200219_M00384_0230_MS8565112-150V3/
@@ -37,8 +75,10 @@ tail slurm-833314.out
 #FINISHED --2021-02-12 11:26:14--
 #Total wall clock time: 6m 1s
 #Downloaded: 28256 files, 4.5G in 55s (82.7 MB/s)
-
 ```
+
+
+
 
 ### Independent Runs from NYU Genome Center
 (to be used later)
