@@ -91,7 +91,7 @@ conda install bbtools
 (bbduk is in bbtools)
 
 --------------------------------------------------------------------------------------------------
-doing actual stuff!!!!!!
+start with code
 
 Step 1 - assess reads with fastqc
 	
