@@ -1,0 +1,979 @@
+Plan:
+1. assess reads with fastq
+	if need to trim
+	a. quality trim with fastp
+	and/or (??)
+	b. kmer trim with khmer
+
+
+2. assess host sequence contamination with
+	a. BLAST ?
+	b. Bowtie? (aligns reads to a whole genome)
+ 
+	if need to trim:
+	a. remove host seq with BBduk? (in BBtools)
+
+3. assembly with SPAdes
+	flags to try:
+```{bash}
+	--metaviral
+	--rnaviral
+```
+
+	maybe add ```--isolate?```
+
+4. compare assembly quality with QUAST
+
+	
+5. Filter generated contigs by size (see segments below), quality, and closely related matches
+
+6. phylogenetics???
+
+7. annotate? (maybe with prokka)
+
+------------------------------------------------------------------------------------------------
+Lets install software and build some conda environemnts
+ 
+install conda:
+w
+```{bash}
+get https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+
+activate conda:
+```source ~/.bashrc```  #should say (base) now
+
+configure channels:
+```{bash}
+conda config --add channels defaults
+conda config --add channels bioconda
+conda config --add channels conda-forge
+```
+
+
+make assembly env
+```{bash}
+conda create -y -n spades
+conda activate spades
+conda install -c bioconda spades
+```
+
+make sep env for quast
+
+```{bash}
+conda create -y -n quast
+conda activate spades
+conda install quast
+conda deactivate
+```
+
+
+hmmm... lets do one conda environment for quality control: 
+(-y means yes, -n means qc)
+```{bash}
+conda create -y -n qc
+conda activate qc
+conda install fastqc
+conda install fastp
+conda install khmer
+conda deactivate
+```
+
+do another for contamination 
+```{bash}
+conda create -y -n decon 
+conda activate decon
+conda install blast
+conda install bowtie2
+conda install bbtools 
+```
+(bbduk is in bbtools)
+
+--------------------------------------------------------------------------------------------------
+doing actual stuff!!!!!!
+
+Step 1 - assess reads with fastqc
+	
+1. assess with fastqc:
+```{bash}
+ fastqc MiSeqAnalysis/*.fastq* --outdir fastqc/
+```
+2. from dmrotation dir on my computer
+```{bash}
+scp cmatt5@crick.cse.ucdavis.edu:~/cgs/fastqc/*html ./
+```
+3. check out htmls
+  wow! they look pretty good. dont think i need to quality trim with fastp. 
+
+Step 2 -kmer trimming
+Do I need to kmher trim? 
+1. hannah houtz says probably, since SPAdes is a k-mer based assembly algorithm.
+2. gonna need bigger compute node, according to the dib rotation
+```{bash}
+srun -p bmh -J khmer -t 20:00:00 --mem=21gb -c 1 --pty bash
+```
+hmmm... got 
+	"srun: error: invalid partition specified: bmh
+srun: error: Unable to allocate resources: Invalid partition name specified"
+
+ from a google search, looks like the partition means the job priority or type. 
+ "bmh" appears to mean "big memory high" as in high-priority
+	... i dont know if my job is big mempry OR high priority, but since titus recommended
+	bmh for running khmer, i will assume it is. 
+	I dont think that crick uses the same terms as farm and that may be why i got an error
+
+	google crick partitions....
+	ok looks like "bm" for big mem might work
+```{bash}
+srun -J khmer -t 20:00:00 --mem=21gb -c 1 --pty bash
+```
+
+3. conda activate qc and make directory for khmer output, cd khmer (reads are now in ../../MiSeqAnalysis/)
+4. okay from the dib rotation:
+"Now we can run k-mer trimming! The first line of this command interleaves our paired end reads, 
+putting them in one file where forward and reverse reads alternate on each line. The second line 
+of this command performs the k-mer trimming.
+Note that these commands are connected by the pipe (|) character. 
+This character means that the first half of the command (before the |) is executed first, and the 
+output is passed ("piped") to the second half of the command (after the |)."
+
+their code: 
+interleave-reads.py ../trim/SRR1976948_1.trim.fastq.gz ../trim/SRR1976948_2.trim.fastq.gz | \
+        trim-low-abund.py --gzip -C 3 -Z 18 -M 20e9 -V - -o SRR1976948.abundtrim.fq.gz
+
+my code: 
+```{bash}
+interleave-reads.py ../trim/SRR1976948_1.trim.fastq.gz ../trim/SRR1976948_2.trim.fastq.gz | trim-low-abund.py --gzip -C 3 -Z 18 -M 20e9 -V - -o SRR1976948.abundtrim.fq.gz
+```
+...not sure if this will wrk, probs need a for loop
+
+```{bash}
+for sample in ../../MiSeqAnalysis/*R1_001.fastq.gz;
+do ../../MiSeqAnalysis/{sample}R1_001.fastq.gz ../../MiSeqAnalysis/{sample}R2_001.fastq.gz | \ trim-low-abund.py --gzip -C 3 -Z 18 -M 20e9 -V - -o {sample}.abundtrim.fastq.gz;
+done
+```
+
+accoring to the help the flags mean:
+--gzip: compress output with gzip
+-C: cutoff, in this case 3 i guess
+-Z: "trim at coverrage" meaning trim reads when entire read is above this coverage, in our case I guess 18 ?
+	... dont know why we would want to trim reads with high coverage 
+-M: "max memory usage"
+-V: --variable coverage, only trim low-abundance kmers from seqs with high coverage (what does that mean?)
+-: idk why thats there, might be an error
+-o: output filename 
+
+#james idea number 1 
+```{bash}
+ls -1 *.gz | xargs -n 2 -J {} sh -c "./interleave-reads.py {} | trim-low-abund.py --gzip -C 3 -Z 18 -M 20e9 -V - -o
+```
+
+#james idea number 2
+
+get the file name with: 
+```{bash}
+$(ls -1 *.gz | rev | cut -c 16- | rev | sort | uniq )
+```
+
+
+write bash script!! (oh boi)
+```{bash}
+mkdir output
+vim khmer.sh
+```
+
+
+```{r bash}
+-------------------------------------------------------------------------------------------
+#!/bin/sh
+
+
+for sample in $(ls -1 *.gz | rev | cut -c 16- | rev | sort | uniq )
+do interleave-reads.py ${sample}R1_001.fastq.gz ${sample}R2_001.fastq.gz | trim-low-abund.py --gzip -C 3 -Z 18 -M 20e9 -V - -o ./output/${sample}.abundtrim.fastq.gz
+done
+
+```
+-------------------------------------------------------------------------------------------
+to run: ./khmer.sh
+
+It worked!!!
+lets move output down to the cgs dir
+```{r bash}
+~/cgs$ mv MiSeqAnalysis/output/ ./
+```
+
+
+***********************************************************************************************
+addition!!! - Titus says now i have to use extract-paired-reads.py!
+it appears to create 2 files .pe and .se for paired and unpaired reads for each sample. the docs arent clear 
+the format....gonna assume its an intervleaved and non-interleaved .fq file format..??
+in bowtie/khmer_out:
+names of files rn are along the lines of: v4_S21_L001.abundtrim.fastq.gz
+for sample in *.gz; do extract-paired-reads.py $sample --gzip; done
+* .pe file will contain paired reads, .se file will contain orphaned reads
+***********************************************************************************************
+Step 3 - assess contamination!
+
+1. Figure out how to use bowtie2
+	looks like we might be using something called disconcordant mapping
+	
+info on using bowtie2 for this: http://www.metagenomics.wiki/tools/short-read/remove-host-sequences
+think im gonna have to install samtools
+conda install samtools into env decon
+
+
+think step 1 will be build a bowtie index for the host reference genome
+	step 2 bowtie2 map reads to ref index made in 1 and keep both mapped and unmapped reads
+	step3 use samtools to keep unmapped reads
+	step 4 maybe? split .sam back into 2 fastqs
+
+step 1, build bowtie index for phi6 mkdir bot
+mkdir bowtie
+2. start tmux session: tmux new -s bowtie
+  someone on the internet did 4 notes, 2 hr, 20 bg so: srun -J bowtie2 -t 5:00:00 -n 4 --mem=21gb -c 1 --pty bash
+3. activate decon env
+4. stpe 4 done in error but still could be useful code: 
+*********************************************************************************
+ hmmm.. looks like bowtie2-build accepts only .fasta files. lets try the bowtie2 -q flag to use the phi6 fqs
+ bowtie2-build -q phi6_S1_L001_R1_001.fastq,phi6_S1_L001_R2_001.fastq phi6DB
+Error: Reference file does not seem to be a FASTA file
+OK, not gonna work...
+	convert fastq to fasta files
+
+```{bash}
+	make a copy of phi6R1 for testing purposes
+	cp phi6_S1_L001_R1_001.fastq COPYphi6_S1_L001_R1_001.fastq
+	cat COPYphi6_S1_L001_R1_001.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > COPYphi6_S1_L001_R1_001.fasta
+
+```
+	seems to work?
+
+remove copies
+```{bash}
+cat phi6_S1_L001_R1_001.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > phi6_S1_L001_R1_001.fasta
+cat phi6_S1_L001_R2_001.fastq | awk '{if(NR%4==1) {printf(">%s\n",substr($0,2));} else if(NR%4==2) print;}' > phi6_S1_L001_R2_001.fasta
+
+```
+
+```{bash}
+bowtie2-build phi6_S1_L001_R1_001.fasta,phi6_S1_L001_R2_001.fasta phi6DB
+```
+ 
+worked!
+*********************************************************************************
+
+actual step 4. okay, get the host sequence, downloaded from genbank 
+```{bash}
+scp Psavastoniref.txt cmatt5@crick.cse.ucdavis.edu:~/cgs/bowtie
+mv Psavastoniref.txt psavastanoi.fasta
+```
+
+
+5.
+make indexes
+```{bash}
+bowtie2-build psavastanoi.fasta psDB
+```
+
+6. map reads to host index db
+hmmm .... i am supposed to 'evaluate whether this is necessary' .. wondering if this step will indicate how many reads are mapped to the PS indices
+
+lets try one on the khmer trimmed reads (how bout the v4 one):
+```{bash}
+bowtie2 --interleaved -1 ../khmer/v4_S21_L001.abundtrim.fq.gz -p 8 -x psDB -S v4_S21_L001.abundtrim.mp_and_ump.sam
+```
+
+ok, didnt work, google search suggests path issue. kets move the v4..gz file to the wd. 
+```{bash}
+bowtie2 --interleaved -1 v4_S21_L001.abundtrim.fq.gz -p 8 -x psDB -1 -S v4_S21_L001.abundtrim.mp_and_ump.sam
+```
+no SAM file...
+OH, think i have an extra -1
+```{bash}
+bowtie2 -p 8 -x psDB --interleaved -1 v4_S21_L001.abundtrim.fq.gz -S v4_S21_L001.abundtrim.mp_and_ump.sam
+```
+"Warning: Could not open read file "-1" for reading; skipping..."
+lets try without the -1
+```{bash}
+ bowtie2 -p 8 -x psDB --interleaved v4_S21_L001.abundtrim.fq.gz -S v4_S21_L001.abundtrim.mp_and_ump.sam
+```
+"113301 reads; of these:
+  113301 (100.00%) were paired; of these:
+    113292 (99.99%) aligned concordantly 0 times
+    9 (0.01%) aligned concordantly exactly 1 time
+    0 (0.00%) aligned concordantly >1 times
+    ----
+    113292 pairs aligned concordantly 0 times; of these:
+      1 (0.00%) aligned discordantly 1 time
+    ----
+    113291 pairs aligned 0 times concordantly or discordantly; of these:
+      226582 mates make up the pairs; of these:
+        226564 (99.99%) aligned 0 times
+        18 (0.01%) aligned exactly 1 time
+        0 (0.00%) aligned >1 times
+0.02% overall alignment rate"
+
+OK, so looks like 0.01% of the reads might be contaminated.
+
+Lets do all of them, have to move trimmed read dir (khmer_out)
+```{bash}
+mv ../khmer_out/ .
+
+for sample in $(ls -1 khmer_out/*.gz | rev | cut -c 20- | rev | sort | uniq ); do bowtie2 -p 8 -x psDB --interleaved ${sample}.abundtrim.fastq.gz -S ${sample}.abundtrim.mp_and_ump.sam
+done
+
+```
+
+will create files with nice names, in the khmer dir. could do this instead: 
+
+```{bash}
+for sample in khmer_out/*.gz
+do bowtie2 -p 8 -x psDB --interleaved $sample -S $sample.mp_and_ump.sam 
+
+```
+
+used the former. 
+```{bash}
+mkdir SAMs
+mv khmer_out/*.sam ./SAMs
+```
+
+ok, most look something like this: 
+```{bash}
+386055 reads; of these:
+  386055 (100.00%) were paired; of these:
+    386054 (100.00%) aligned concordantly 0 times
+    1 (0.00%) aligned concordantly exactly 1 time
+    0 (0.00%) aligned concordantly >1 times
+    ----
+    386054 pairs aligned concordantly 0 times; of these:
+      0 (0.00%) acdligned discordantly 1 time
+    ----
+    386054 pairs aligned 0 times concordantly or discordantly; of these:
+      772108 mates make up the pairs; of these:
+        772102 (100.00%) aligned 0 times
+        6 (0.00%) aligned exactly 1 time
+        0 (0.00%) aligned >1 times
+0.00% overall alignment rate
+```
+
+
+.....soooo it doesnt rewally look like host decon was necessary
+
+7. sam to bam
+```{bash}
+samtools view -bS SAMPLE_mapped_and_unmapped.sam > SAMPLE_mapped_and_unmapped.bam 
+```
+#-bS means output is bam and input is autodetected
+
+```{bash}
+mine: 
+for s in $(ls -1 SAMs/*.sam | rev | cut -c 4- | rev | sort | uniq ); do samtools view -bS ${s}.sam > ${s}.bam; done
+didnt work, bams empty. i think it needs to be 5-
+for s in $(ls -1 SAMs/*.sam | rev | cut -c 5- | rev | sort | uniq ); do samtools view -bS ${s}.sam > ${s}.bam; done
+
+```
+worked.
+mmove em down..
+```{bash}
+mkdir BAMs
+mv SAMs/*.bam ./BAMs
+```
+
+8. filter mapped reads
+```{bash}
+samtools view -b -f 12 -F 256 SAMPLE_mapped_and_unmapped.bam > SAMPLE_bothReadsUnmapped.bam
+```
+-b: output BAM
+-f 12     Extract only (-f) alignments with both reads unmapped: <read unmapped><mate unmapped>
+-F 256   Do not(-F) extract alignments which are: <not primary alignment>
+
+```{bash}
+
+for s in $(ls -1 BAMs/*.bam | rev | cut -c 16- | rev | sort | uniq ); do samtools view -b -f 12 -F 256 ${s}.mp_and_ump.bam > ${s}.bothRump.bam; done
+
+```
+
+
+************************************************************************************************************************
+REPEATING THE BOWTIE STEPS!! deleted bowtie alignment files (.bam and .sam files), not host index
+
+6.repeat on paired read files (--interleaved in bowtie) and unpaired read files (-U in bowtie)
+file example:v4_S21_L001.abundtrim.fastq.gz.pe (paired); v4_S21_L001.abundtrim.fastq.gz.se (loners)
+
+```{bash}
+mkdir SAMs
+```
+
+paired:
+```{bash}
+for sample in $(ls -1 khmer_out/*.pe | rev | cut -c 4- | rev | sort | uniq ); do bowtie2 -p 8 -x psDB --interleaved ${sample}.pe -S ${sample}.pe.mp_and_ump.sam; done
+
+```
+ex:
+```{bash}
+92698 reads; of these:
+  92698 (100.00%) were paired; of these:
+    92696 (100.00%) aligned concordantly 0 times
+    2 (0.00%) aligned concordantly exactly 1 time
+    0 (0.00%) aligned concordantly >1 times
+    ----
+    92696 pairs aligned concordantly 0 times; of these:
+      0 (0.00%) aligned discordantly 1 time
+    ----
+    92696 pairs aligned 0 times concordantly or discordantly; of these:
+      185392 mates make up the pairs; of these:
+        185392 (100.00%) aligned 0 times
+        0 (0.00%) aligned exactly 1 time
+        0 (0.00%) aligned >1 times
+```
+
+unpaired:
+```{bash}
+for sample in $(ls -1 khmer_out/*.se | rev | cut -c 4- | rev | sort | uniq ); do bowtie2 -p 8 -x psDB --U ${sample}.se -S ${sample}.se.mp_and_ump.sam; done
+```
+ex:
+```{bash}
+3557 reads; of these:
+  3557 (100.00%) were unpaired; of these:
+    3557 (100.00%) aligned 0 times
+    0 (0.00%) aligned exactly 1 time
+    0 (0.00%) aligned >1 times
+0.00% overall alignment rate
+```
+
+
+```{bash}
+mv khmer_out/*.sam ./SAMs
+```
+
+7. sam to bam
+```{bash}
+for s in $(ls -1 SAMs/*.sam | rev | cut -c 5- | rev | sort | uniq ); do samtools view -bS ${s}.sam > ${s}.bam; done
+
+```
+
+8. 
+```{bash}
+filter out mapped reads
+for s in $(ls -1 BAMs/*.bam | rev | cut -c 16- | rev | sort | uniq ); do samtools view -b -f 12 -F 256 ${s}.mp_and_ump.bam > ${s}.bothRump.bam; done
+
+```
+***for right now, lets ignore filtered .se files (*.se.bothRunmapped.bam)***
+
+so lets see how our unfiltered (mp_and_ump) and filtered (bothRump) files look, to decide if we need to continue with host filtered files
+use ```{bash}samtools stats <filename.bam> | grep ^SN | cut -f 2- ``` to view stats header for each file
+save all info to a file: 
+```{bash}
+for i in *.pe*; do echo >> pe.stats.txt; echo >> pe.stats.txt; echo $i; echo $i >> pe.stats.txt; samtools stats $i | grep ^SN | cut -f 2- >> pe.stats.txt; done
+```
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+I dont know how to filter the orphaned reads!!
+
+lets see what percentage of our reads are actually orphaned - just gonna have to look at a couple 1 by 1 
+
+couldnt get this to work... grr  
+```{bash}
+for s in $(ls -1 *.pe | rev | cut -c 4- | rev | sort | uniq ); do pe = $(zgrep '+' -c ${s}.pe); se = $(zgrep '+' -c ${s}.se); echo "$se/($se+$pe)" | bc; done )
+```
+
+it looks like around 1-2%
+
+
+Do i have to do this ????? :
+9.  split paired-end reads into separated fastq files (we will only have to do this to the .pe files, since the .se files are already singletons)
+```{bash}
+mkdir bowtie/FQfromBAMs
+sort bam file by name: samtools sort -n -m 5G -@ 2 SAMPLE_bothReadsUnmapped.bam -o SAMPLE_bothReadsUnmapped_sorted.bam
+for s in $(ls -1 BAMs/*.bam | rev | cut -c 16- | rev | sort | uniq ); do samtools sort -n -m 5G -@ 2
+```
+
+
+************************************************************************************************************************
+ok so to recap: rn the .pe kmer filtered reads are 'done' and the host trimmed .pe files are done
+************************************************************************************************************************
+
+Ok, time for assembly w spades
+
+make directory in which to store assemblies
+mkdir cgs/spades
+spades/k.trimmed; spades/k.h.trimmed; spades/raw
+trimmed/metaviral; trimmed/rnaviral; raw/metaviral; raw/rnaviral
+ln -s ~/cgs/bowtie/khmer_out/ khmer
+
+1. khmer only trimmed seqs
+2. the khmer & bowtie trimmed sequences ({s}.bothRump.bam)
+I think using the -12 flag for an interlaced file and -s for the orphan read file, spades can take both the .pe and .se read files
+```{bash}
+--metaviral
+--rnaviral
+```
+3. the untrimmed sequences
+```{bash}
+--metaviral
+--rnaviral
+```
+
+1. the khmer trimmed seqs
+```{bash}
+--metaviral: 
+```
+
+```{bash}
+for s in $(ls -1 ./khmer/*.pe | rev | cut -c 4- | rev | sort | uniq ); d
+o spades.py --metaviral -12 ${s}.pe -o k.trimmed/metaviral/${s}; 
+done
+
+```
+
+--rnaviral
+```{bash}
+for s in $(ls -1 ./khmer/*.pe | rev | cut -c 4- | rev | sort | uniq );
+do spades.py --rnaviral -12 ${s}.pe.bothRump.bam  -o k.trimmed/rnaviral/${s};
+done
+
+```
+
+2. the khmer & bowtie trimmed sequences (only files with ending ".bothRump.bam")
+--metaviral: 
+```{bash}
+for s in $(ls -1 /bowtie/BAMs/*.pe.bothRump.bam | rev | cut -c 17- | rev | sort | uniq );
+do spades.py --metaviral -12 ${s}.pe.bothRump.bam -s ${s}.se.bothRump.bam -o spades/trimmed/metaviral/${s};
+done
+```
+
+--rnaviral
+```{bash}
+for s in $(ls -1 /bowtie/BAMs/*.pe.bothRump.bam | rev | cut -c 17- | rev | sort | uniq );
+do spades.py --rnaviral -12 ${s}.pe.bothRump.bam -s ${s}.se.bothRump.bam -o spades/trimmed/rnaviral/${s};
+done
+```
+
+
+3. the untrimmed sequences
+
+maybe later
+
+
+
+running the assembly!
+for lack of a better plan lets use the following srun:
+```{bash}
+srun --nodes=1 -t 2:00:00 -c 4 --mem 6GB --pty /bin/bash
+```
+
+okay, trying code for 1.--metaviral:
+```{bash}
+for s in $(ls -1 ./khmer/*.pe | rev | cut -c 4- | rev | sort | uniq ); do spades.py --metaviral -12 ${s}.pe -o k.trimmed/metaviral/${s}; done
+```
+
+
+"== Error ==  file with reads has unsupported format (only .fq, .fastq, .bam, .fq.gz, .fastq.gz, .fa, .fasta, .fa.gz, .fasta.gz, .gfa are supported): /home/cmatt5/cgs/spades/khmer/ca71a_S3_L001_.abundtrim.fastq.gz.pe (interlaced reads, library number: 1, library type: paired-end)"
+ok.. doesnt like .pe lets add .fq at end and see what happens
+
+```{bash}
+mkdir FQcopies
+```
+ go to the khmer_out folder overin bowtie
+```{bash}
+for i in *.pe; do cp $i ../../spades/FQcopies/$i.fq; done
+```
+
+
+
+"Now try:  
+```{bash}
+for s in $(ls -1 ./FQcopies/*.fq | rev | cut -c 4- | rev | sort | uniq ); do spades.py --metaviral --12 ${s}.fq -o k.trimmed/metaviral/${s}; done
+```
+nope:
+```{bash}
+== Error ==  utf-8
+
+Traceback (most recent call last):
+  File "/home/cmatt5/miniconda3/envs/spades/share/spades/spades_pipeline/support.py", line 142, in check_file_not_empty
+    if next(reads_iterator, None) is None:
+  File "/home/cmatt5/miniconda3/envs/spades/share/spades/spades_pipeline/common/SeqIO.py", line 119, in parse_fastq
+    while not reader.EOF():
+  File "/home/cmatt5/miniconda3/envs/spades/share/spades/spades_pipeline/common/SeqIO.py", line 69, in EOF
+    return self.Top() == ""
+  File "/home/cmatt5/miniconda3/envs/spades/share/spades/spades_pipeline/common/SeqIO.py", line 36, in Top
+    self.FillCash()
+  File "/home/cmatt5/miniconda3/envs/spades/share/spades/spades_pipeline/common/SeqIO.py", line 30, in FillCash
+    self.cash = self.handler.readline()
+  File "/home/cmatt5/miniconda3/envs/spades/lib/python3.9/codecs.py", line 705, in readline
+    return self.reader.readline(size)
+  File "/home/cmatt5/miniconda3/envs/spades/lib/python3.9/codecs.py", line 558, in readline
+    data = self.read(readsize, firstline=True)
+  File "/home/cmatt5/miniconda3/envs/spades/lib/python3.9/codecs.py", line 504, in read
+    newchars, decodedbytes = self.decode(data, self.errors)
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x8b in position 1: invalid start byte
+```
+
+In case you have troubles running SPAdes, you can write to spades.support@cab.spbu.ru
+or report an issue on our GitHub repository github.com/ablab/spades
+Please provide us with params.txt and spades.log files from the output directory."
+
+
+hmmm
+
+Spades claims to work on gzipped files but the internet says that may be the issue. 
+actually could be cause the .gz file ending isnt there, so maybe spades doesnt recognize that its gzipped
+unzipped all the files in FQcopies
+now again:
+```{bash}
+for s in $(ls -1 ./FQcopies/*.fq | rev | cut -c 4- | rev | sort | uniq ); do gunzip ${s}.fq | spades.py --metaviral --12 ${s}.fq -o k.trimmed/metaviral/${s}; done
+```
+
+grrrr... still nope!
+
+
+lets skip to raw seqs for now...
+
+run from cgs:
+```{bash}
+for s in $(ls -1 MiSeqAnalysis/*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --metaviral -1 ${s}_R1_001.fastq.gz -2 ${s}_R2_001.fastq.gz -o k.trimmed/metaviral/${s}; done
+```
+
+working! 
+#lets do rnaviral in another window:
+```{bash}
+tmux new -s rna
+```
+
+#also lets do way more than 2 hrs....
+```{bash}
+srun --nodes=1 -t 20:00:00 -c 4 --mem 6GB --pty /bin/bash
+for s in $(ls -1 MiSeqAnalysis/*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --rnaviral -1 ${s}_R1_001.fastq.gz -2 ${s}_R2_001.fastq.gz -o k.trimmed/rnaviral/${s}; done
+```
+```{bash}
+
+```
+
+
+!!! when done, remember to change name "k.trimmed' back to raw!!!
+
+```{bash}
+for s in $(ls -1 MiSeqAnalysis/*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --metaviral -1 ${s}_R1_001.fastq.gz -2 ${s}_R2_001.fastq.gz -o k.trimmed/metaviral/${s} >> meta.output.txt ; done
+```
+
+
+
+looks like --metaviral contigs are empty .... lets try --meta?
+(gonna keep putting in thisk.trimmed folder for now...)
+```{bash}
+for s in $(ls -1 MiSeqAnalysis/*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --meta -1 ${s}_R1_001.fastq.gz -2 ${s}_R2_001.fastq.gz -o k.trimmed/meta/${s} >> --meta.output.txt ; done
+```
+
+
+-assess assemblies with QUAST
+cmatt5@c2-3:~/cgs/raw/meta/MiSeqAnalysis$ mkdir quast.out
+(quast) cmatt5@c2-3:~/cgs/raw/meta/MiSeqAnalysis$ for i in ./*/contigs.fasta; do quast $i -o ./quast.out/${i}; done
+(quast) cmatt5@c2-3:~/cgs/raw/rnaviral/MiSeqAnalysis$ for i in ./*/contigs.fasta; do quast $i -o ./quast.out/${i}; done
+
+
+
+interpreting quast results: 
+
+"Metrics based only on contigs:
+
+-Number of large contigs (i.e., longer than 500 bp) and total length of them.
+-Length of the largest contig.
+-N50 (length of a contig, such that all the contigs of at least the same length together cover at least 50% of the assembly).
+-Number of predicted genes, discovered either by GeneMark.hmm (for prokaryotes), GeneMark-ES or GlimmerHMM (for eukaryotes), or MetaGeneMark (for metagenomes)."
+
+
+put all quast reports in one text file
+
+ 
+(quast) cmatt5@c2-3:~/cgs/raw/metaviral/MiSeqAnalysis/quast.out$ for i in *; do echo $i >> all.quast.txt ; cat $i/contigs.fasta/report.txt >> all.quast.txt; echo >> all.quast.txt; echo >> all.quast.txt; done
+for i in *; do echo $i >> all.quast.txt ; cat $i/contigs.fasta/report.txt >> all.quast.txt; echo >> all.quast.txt; echo >> all.quast.txt; done
+
+(quast) cmatt5@c2-3:~/cgs/raw/rnaviral/MiSeqAnalysis/quast.out$ for i in *; do echo $i >> all.quast.txt ; cat $i/contigs.fasta/report.txt >> all.quast.txt; echo >> all.quast.txt; echo >> all.quast.txt; done
+
+!! for both I got the message "cat: cacv2016_S40_L001/contigs.fasta/report.txt: No such file or directory" so something is wrong with that folder
+
+
+
+
+
+
+ANALYSIS!
+
+1. lets try finding some ORFs as done by Mantyen et al 2015 with ORF finder. not sure if can do from command line
+
+maybe ? :https://gist.github.com/mkweskin/30e3bd57534868cccd700f4181f07103
+```{bash}
+srun --nodes=1 -t 20:00:00 -c 4 --mem 6GB --pty /bin/bashs
+conda install -c anaconda libgcc
+```
+doesnt work. 
+
+
+Hmmm, lets try the program Prodigal http://dmnfarrell.github.io/bioinformatics/genome-annotation-python
+
+```{bash}
+conda create -y -n prodigal
+conda activate prodigal 
+conda install prodigal
+prodigal -h #looks like it takes .fasta files, perfect!
+```
+
+
+lets move the assembly folders in cgs/raw/metaviral/MiSeqAnalysis down to just ../metaviral
+mkdir prodigal (dont inclue _ in this name, all other folders have _ so i can do for i in *_* to loop thru them only)
+
+in metaviral: 
+```{bash}
+for i in *_*; do prodigal -i $i/contigs.fasta -o ./prodigal/$i; done
+```
+
+WHOOPS, i should be doing this in meta
+
+```{bash}
+$(ls -1 *.gz | rev | cut -c 16- | rev | sort | uniq )
+
+```
+
+3-10-21
+
+```{bash}
+for i in *.fasta;
+do for j in $(grep '>' $i)
+do  
+```
+
+
+```{bash}
+awk -v RS='>' 'NR>1 { gsub("\n", ";", $0); sub(";$", "", $0); print ">"$0 }' seq.fa | head -n 2 | tr ',' '\n'
+```
+
+
+
+to run Tree Tangler:
+```{bash}
+cd TreeTangler
+npm install --global serve
+serve public
+```
+*open browser, go to http://localhost:5000
+
+
+
+
+3/30
+
+generate blast output for cgs seqs: 
+in blast conda env
+
+
+```{bash}
+for i in raw/meta/*L001/scaffolds.fasta; do echo >> blastout_okeefe-silander.txt; echo $i >> blastout_okeefe-silander.txt; echo >> blastout_okeefe-silander.txt; blastn -query $i -subject okeefe_silander_refs.fasta >> blastout_okeefe-silander.txt; done
+```
+
+and 
+
+```{bash}
+for i in raw/meta/*L001/scaffolds.fasta; do for j in phi7-refs/*; do echo >> blastout_phi7.txt; echo $i >> blastout_phi7.txt; echo >> blastout_phi7.txt; blastn -query $i -subject $j >> blastout_phi7.txt; done; done
+
+```
+
+etc
+
+```{bash}
+for i in raw/meta/*L001/scaffolds.fasta; do echo >> blastout_phi6all.txt; echo $i >> blastout_phi6all.txt; echo >> blastout_phi6all.txt; blastn -query $i -subject phi6-ref/phi6ref.fasta >> blastout_phi6all.txt; done
+```
+
+for some reason, no results for phi12?? weird
+```{bash}
+for i in raw/meta/*L001/scaffolds.fasta; do echo >> blastout_phi12.csv; echo $i >> blastout_phi12.csv; echo >> blastout_phi12.csv; blastn -query $i -subject phi12-ref/phi12ref.fasta -outfmt "10 delim=, qseqid sseqid evalue length score pident mismatch gaps" >> blastout_phi12.csv; done
+```
+
+
+
+
+
+
+*in excel*
+
+insert col to left, then
+use macro to rearrange (saved in movemacro.txt)
+
+to get segment letter (phi6)
+=IF(ISNUMBER(SEARCH("15",C2)), "L", IF(ISNUMBER(SEARCH("16", C2)), "M", IF(ISNUMBER(SEARCH("14", C2)), "S")))
+
+phi7:
+=IF(ISNUMBER(SEARCH("82",C2)), "S", IF(ISNUMBER(SEARCH("81", C2)), "M", IF(ISNUMBER(SEARCH("80", C2)), "L")))
+
+spades refs:
+=IF(ISNUMBER(SEARCH("segment_S",C2)), "S", IF(ISNUMBER(SEARCH("segment_M", C2)), "M", IF(ISNUMBER(SEARCH("segment_L", C2)), "L", "NA")))
+
+
+
+
+
+
+Uhh so for some reason i dont have a phi6 assembly (think i deleted it by accident cause it was in a dir by itself bc i used as a test)
+```{bash}
+conda activate spades
+spades.py --meta -1 MiSeqAnalysis/phi6_S1_L001_R1_001.fastq -2 MiSeqAnalysis/phi6_S1_L001_R2_001.fastq -o phi6assembly/ >> phi6assembly/phi6spadesoutput.txt
+```
+
+
+blast for the new phi 6 assembly
+```{bash}
+for i in phi6assembly/scaffolds.fasta; do echo >> blastout_phi6_phi6.csv; echo $i >> blastout_phi6_phi6.csv; echo >> blastout_phi6_phi6.csv; blastn -query $i -subject  -outfmt "10 delim=, qseqid sseqid evalue length score pident mismatch gaps" >> blastout_phi6_phi6.csv; done
+```
+
+4/8 lab meeting notes
+quality score - avg % bases over q30
+p150 as opposed to p57 (length of read) 
+illumina quality degrades with incr read length
+
+but might agree with the second read, could be fine. 
+could trim at 110 and have almost perfect ends 
+clean up adapter sequence
+
+
+repeat steps on new raw sequences for now (in new_cgs): 
+```{bash}
+for s in $(ls -1 MiSeqAnalysis/*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --metaviral -1 ${s}_R1_001.fastq.gz -2 ${s}_R2_001.fastq.gz -o raw_new/meta/${s}; done
+```
+
+
+Ok, going really slow, going to delete output and add more time and memory to the srun session (and start tmux) and start over
+```{bash}
+tmux new -s assembly
+srun -J spades -t 20:00:00 --mem=50gb -c 1 --pty bash
+activate spades env
+```
+repeat above ^ 
+
+
+ok... assembly scaffold.fasta files are empty!
+
+What if i do a couple files with way more memory than before? 
+
+OK tried for CA65d_S30_L001 & kri289_S16_L001. not empty anymore but seqs are really short. 
+Think i need to fastp trim
+
+trim with fastp
+
+from my DIB lab rotation: 
+
+fastp --in1 ../raw_data/SRR1976948_1.fastq.gz \
+  --in2 ../raw_data/SRR1976948_2.fastq.gz \
+  --out1 SRR1976948_1.trim.fastq.gz \
+  --out2 SRR1976948_2.trim.fastq.gz \
+  --detect_adapter_for_pe \
+  --qualified_quality_phred 4 \
+  --length_required 31 --correction \
+  --json SRR1976948.trim.json \
+  --html SRR1976948.trim.html
+
+Command Breakdown
+
+--in1, --in2 - the read1 and read2 input file names
+--out1, --out2 - the read1 and read2 output file names
+--detect_adapter_for_pe - Auto detect the adapters for our paired end (PE) reads, and remove them during trimming
+--length_required - discard reads shorter than length_required paramter (default is 15)
+--correction - enable base correction if the paired end reads overlap (only for PE data),
+--qualified_quality_phred - the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. (int [=15])
+--html, --json - file name for the fastp trimming report printed to html and/or json format
+
+
+with loop:
+for s in $(ls -1 MiSeqAnalysis/*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do fastp --in1 ${s}_R1_001.fastq.gz \
+  --in2 ${s}_R2_001.fastq.gz \
+  --out1 ${s}_1.trim.fastq.gz \
+  --out2 ${s}_2.trim.fastq.gz \
+  --detect_adapter_for_pe \
+  --qualified_quality_phred 8 \
+  --length_required 31 --correction \
+  --json ${s}.trim.json \
+  --html ${s}.trim.html; done
+
+#phred sccore of 4 might be too lenient since the rotation project was about metagenomics? lets do 10
+
+```{bash}
+mv *trim* ../trimmed
+```
+
+repeat assembly
+```{bash}
+for s in $(ls -1 ./*_1.trim.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --metaviral -1 ${s}_1.trim.fastq.gz -2 ${s}_2.trim.fastq.gz -o ./${s}; done
+```
+
+Grrr... assemblies are still empty. lets delete and try again doing fewer at a time
+```{bash}
+for s in $(ls -1 ./1*_1.trim.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --metaviral -1 ${s}_1.trim.fastq.gz -2 ${s}_2.trim.fastq.gz -o ./${s}; done
+```
+
+AH, i ran --metaviral. whoops!
+
+```{bash}
+for s in $(ls -1 ./*_1.trim.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --meta -1 ${s}_1.trim.fastq.gz -2 ${s}_2.trim.fastq.gz -o ./${s}; done
+```
+
+
+
+to blast control seqs:
+
+```{bash}
+conda activate blast
+echo "strain: phi6" >> new_control_alignments.txt
+```
+
+
+
+
+good. it worked!
+
+
+interesting to see what kmer size is selected by spades? 
+will it be longer bc of longer reads? 
+chk against known seqs
+then compare with other
+
+
+
+redo assemblie on untrimmed seqs 
+
+
+```{bash}
+for s in $(ls -1 ./*_R1_001.fastq.gz | rev | cut -c 17- | rev | sort | uniq ); do spades.py --meta -1 ${s}_R1_001.fastq.gz -2 ${s}_R2_001.fastq.gz -o ./${s}; done
+mv *L001 ../assemblies_untrimmed
+```
+move all referencceseqs into all_refs.fasta
+
+make blast .csv:
+```{bash}
+for i in trimmed/assemblies/*L001/scaffolds.fasta; do echo >> blastout_new.csv; echo $i >> blastout_new.csv; echo >> blastout_new.csv; blastn -query $i -subject refs/all_refs.fasta -outfmt "10 delim=, qseqid sseqid evalue length score pident mismatch gaps" >> blastout_new.csv; done
+```
+
+
+
+
+
+
+
+
+
+
+
+
+random for loop fun :D
+
+
+```{bash}
+for infile in reads/*R1_001.fastq.gz
+do
+bn=$(basename $infile R1_001.fastq.gz)
+megahit -1 reads/${bn}_R1_001.fastq.gz -2 reads/${bn}_R2_001.fastq.gz -o megahit-min-count-3-assembly_${bn}/ -t 6 --min-count 3
+done
+
+```
+
+
