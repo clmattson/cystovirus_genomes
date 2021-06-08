@@ -234,6 +234,18 @@ mkdir /share/munozlab/phi6_ca65d_run1/fastq_hac_fail
 $ scp cmatt5@crick.cse.ucdavis.edu:~/phi6_ca65d_run1/fastq_hac/demultiplexed/demultiplexed_blast.csv ./
 #open csv, split first column text by '_' delimiter
 
+```
+
+## are reads all cystovirus? 
+```{bash}
+#cat files for each group of reads
+cmatt5@crick:~/phi6_ca65d_run1/fastq_hac/demultiplexed$ cat barcode*/*.fasta >> demultiplexed_2bcd.fasta
+cmatt5@crick:~/phi6_ca65d_run1/fastq_hac/demultiplexed_one_barcode$ cat barcode*/*.fasta >> demultiplexed_1bcd.fasta
+
+#from local:
+
+$ scp cmatt5@crick.cse.ucdavis.edu:~/phi6_ca65d_run1/fastq_hac/demultiplexed_one_barcode/*.fasta ./
+$ scp cmatt5@crick.cse.ucdavis.edu:~/phi6_ca65d_run1/fastq_hac/demultiplexed/*.fasta ./
 
 
 
