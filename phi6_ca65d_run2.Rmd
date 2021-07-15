@@ -1,0 +1,20 @@
+
+
+```{bash} 
+
+#get data from local
+
+## Basecalling
+
+#Place to land the results
+mkdir /share/munozlab/phi6_ca65d_run1/fastq_hac
+/share/munozlab/ont-guppy/bin/guppy_basecaller --input_path /share/munozlab/data/phi6_ca65d_run1/fast5_pass --save_path /share/munozlab/phi6_ca65d_run1/fastq_hac --config dna_r9.4.1_450bps_hac.cfg -x cuda:all:100% --num_callers 8
+
+#Need to request GPU's!!!
+
+#to access home dir
+kinit -l14d
+#input p/w then
+aklog
+
+srun --reservation gpu.test -n1 -N1 --mem=5g -t00:05:00 --gres=gpu:1,cuda:3.0:1,gpu_mem:100 --pty /bin/bash
