@@ -1,9 +1,66 @@
 
 on sociovirology computer:
 ```{bash}
+
+
 #BASECALLING
 ~/ont-guppy/bin/guppy_basecaller --input_path ~/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fast5_pass --save_path ~/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac --config dna_r9.4.1_450bps_hac.cfg -x cuda:0 --num_callers 8
 
 #DEMULTIPLEXING
 ~/ont-guppy/bin/guppy_barcoder --require_barcodes_both_ends -i ~/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac -s ~/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/demultiplexed --arrangements_files "barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg" -x cuda:0 --worker_threads 8
+
+
+ONT Guppy barcoding software version 5.0.11+2b6dbff
+input path:         /home/user/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/
+save path:          /home/user/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/demultiplexed
+arrangement files:  barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg
+lamp arr. files:    barcode_arrs_ncov8.cfg barcode_arrs_ncov96.cfg barcode_arrs_multivirus1.cfg barcode_arrs_multivirus8.cfg
+min. score front:   60
+min. score rear:    60
+gpu device:         cuda:0
+
+Found 0 input files.
+
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+Done in 223 ms.
+
+
+#for some reason, not recognizing .fastq file in /fastq_hac/pass and /fastq_hac/fail, repeat specifying /pass
+
+#DEMULTIPLEXING
+~/ont-guppy/bin/guppy_barcoder --require_barcodes_both_ends -i ~/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/pass -s ~/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/demultiplexed_pass --arrangements_files "barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg" -x cuda:0 --worker_threads 8
+
+
+ONT Guppy barcoding software version 5.0.11+2b6dbff
+input path:         /home/user/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/pass
+save path:          /home/user/minion_reads/phi6_ca65_run2/20210709_2221_MN23913_FAL59701_50e0cf62/fastq_hac/demultiplexed_pass
+arrangement files:  barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg
+lamp arr. files:    barcode_arrs_ncov8.cfg barcode_arrs_ncov96.cfg barcode_arrs_multivirus1.cfg barcode_arrs_multivirus8.cfg
+min. score front:   60
+min. score rear:    60
+gpu device:         cuda:0
+
+Found 1 input files.
+
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+Done in 321 ms.
+
+
+
+#CHECK # READS: 
+
+wc -l barcode*/*.fastq | awk '{print $2, $1/4}'
+
+#create .fasta files for BLASTing
+for i in barcode*/*.fastq; do sed -n '1~4s/^@/>/p;2~4p' $i > $i.fasta; done
+#headers have spaces
+for i in barcode*/*.fasta; do sed 's, ,_,g' -i $i; done
+
+#BLAST!
+
+
 ```
