@@ -93,4 +93,10 @@ for i in barcode*/*.fasta; do sed 's, ,_,g' -i $i; done
 #BLAST!
 
 group/diazmunozlab/share
+
+
+#REPEAT DEMULTIPLEXING - WITH TRIM BARCODES FLAG
+~/ont-guppy/bin/guppy_barcoder --require_barcodes_both_ends --trim_barcodes -i /mnt/data0/phi6_ca65_test3/phi6_ca65_test3/20210803_2346_MN23913_FAL59701_b71d4cf8/fastq_hac/pass -s /mnt/data0/phi6_ca65_test3/phi6_ca65_test3/20210803_2346_MN23913_FAL59701_b71d4cf8/fastq_hac/demultiplexed_pass --arrangements_files "barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg" -x cuda:0 --worker_threads 8
+
+
 ```
