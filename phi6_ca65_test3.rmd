@@ -93,10 +93,59 @@ for i in barcode*/*.fasta; do sed 's, ,_,g' -i $i; done
 #BLAST!
 
 group/diazmunozlab/share
+```
+
+#move .fastq's to local with an external hard drive and upload to crick
 
 
-#REPEAT DEMULTIPLEXING - WITH TRIM BARCODES FLAG
-~/ont-guppy/bin/guppy_barcoder --require_barcodes_both_ends --trim_barcodes -i /mnt/data0/phi6_ca65_test3/phi6_ca65_test3/20210803_2346_MN23913_FAL59701_b71d4cf8/fastq_hac/pass -s /mnt/data0/phi6_ca65_test3/phi6_ca65_test3/20210803_2346_MN23913_FAL59701_b71d4cf8/fastq_hac/demultiplexed_pass --arrangements_files "barcode_arrs_nb12.cfg barcode_arrs_nb24.cfg" -x cuda:0 --worker_threads 8
+#analysis 
+```{bash}
+#1. QC 
+fastqc barcode*/*.fastq --outdir ./fastqc/
+
+#from local:
+scp cmatt5@crick.cse.ucdavis.edu:~/run3_cgs/demultiplexed_pass/fastqc/*.html ./
+
+#2. align with minimap
+mkdir minimap 
+
+for i in barcode*/barcode*.fastq; 
+do bn=$(basename $i *.fastq);
+minimap2 -a -x map-ont -t 4 ~/refs/phi6ref.fasta $i -o minimap/${bn}.sam; 
+done
+
+#3. sam to bam & sortbam
+#Convert sam to bam
+cd minimap 
+for i in *.sam; 
+do bn=$(basename $i .sam);
+samtools view -b ${bn}.sam -o ${bn}.bam
+done
+
+#sort
+for i in *.bam;  
+do bn=$(basename $i .bam); 
+samtools sort -o ${bn}.sorted.bam ${bn}.bam; 
+done
+
+#4. genome coverage
+for i in *.sorted.bam; 
+do bn=$(basename $i .sorted.bam); 
+samtools coverage ${bn}.sorted.bam; 
+done
+
+
+#5. average depth of covered bases
+for i in *.sorted.bam; 
+do bn=$(basename $i .sorted.bam); 
+samtools depth ${bn}.sorted.bam | awk '{sum+=$3} END { print "Average = ",sum/NR}'; 
+done
+
+#6. 
+for i in *.sorted.bam; 
+do bn=$(basename $i .sorted.bam); 
+samtools depth ${bn}.sorted.bam > ${bn}.readdepth.tsv;
+done
 
 
 ```
