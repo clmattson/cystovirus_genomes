@@ -122,11 +122,20 @@ do bn=$(basename $i .sam);
 samtools view -b ${bn}.sam -o ${bn}.bam
 done
 
+
 #sort
 for i in *.bam;  
 do bn=$(basename $i .bam); 
 samtools sort -o ${bn}.sorted.bam ${bn}.bam; 
 done
+
+#index?
+
+for i in *.sorted.bam;  
+do bn=$(basename $i .sorted.bam); 
+samtools index ${bn}.sorted.bam
+done
+
 
 #4. genome coverage
 for i in *.sorted.bam; 
