@@ -1,0 +1,262 @@
+ 3242  wget https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos3/sra-pub-zq-22/SRR008/729/SRR8729118.sralite.1
+ 3243  ls
+ 3244  cd raw_fastqs/
+ 3245  ls
+ 3246  cd ..
+ 3247  cat SRR8729118.sralite.1
+ 3248  4;1;2;4;6;9;11;15;21;22;28;29c64;1;2;4;6;9;11;15;21;22;28;29c
+ 3249  64;1;2;4;6;9;11;15;21;22;28;29c64;1;2;4;6;9;11;15;21;22;28;29c
+ 3250  ls
+ 3251  rm SRR8729118.sralite.1
+ 3252  ls
+ 3253  mv *.fastq ./raw_fastqs/
+ 3254  ls
+ 3255  cd raw_fastqs/
+ 3256  wget https://trace.ncbi.nlm.nih.gov/Traces/?run=SRR8729118
+ 3257  ls
+ 3258  rm index.html\?run\=SRR8729118
+ 3259  ls
+ 3260  wget s3://sra-pub-src-16/SRR8729118/Phi6_50_R1_001.fastq.gz
+ 3261  wget -O SRR8729118.fastq.gz "http://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?cmd=dload&run_list=SRR8729118&format=fastq"
+ 3262  ls
+ 3263  gunzip SRR8729118.fastq.gz
+ 3264  head SRR8729118.fastq.gz
+ 3265  head -50 SRR8729118.fastq.gz
+ 3266  cat SRR8729118.fastq.gz
+ 3267  rm SRR8729118.fastq.gz
+ 3268  ls
+ 3269  git clone https://github.com/s-andrews/sradownloader.git
+ 3270  ls
+ 3271  tar -xzf sradownloader/
+ 3272  which fastq_dump
+ 3273  which fastq-dump
+ 3274  sradownloader/
+ 3275  ls
+ 3276  cd sradownloader/
+ 3277  ls
+ 3278  sradownloader
+ 3279  head sradownloader
+ 3280  cd..
+ 3281  rm -r sradownloader
+ 3282  wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-ubuntu64.tar.gz
+ 3283  ls
+ 3284  cd ..
+ 3285  ls
+ 3286  rm -r sradownloader
+ 3287  ls
+ 3288  wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-ubuntu64.tar.gz
+ 3289  ls
+ 3290  tar -vxzf sratoolkit.tar.gz
+ 3291  export PATH=$PWD/sratoolkit.3.0.0-mac64/bin:$PATH
+ 3292  which fastq-dump
+ 3293  fastq-dump
+ 3294  apt install sra-toolkit
+ 3295  ls
+ 3296  export PATH=\$PWD/sratoolkit.3.2.0-ubuntu64/bin:$PATH
+ 3297  which fastq-dump
+ 3298  which fastq_dump
+ 3299  which fastq-dump
+ 3300  export PATH=\$PWD/sratoolkit.3.2.0-ubuntu64/bin:$PATH
+ 3301  rm sratoolkit.*
+ 3302  rm -r sratoolkit.*
+ 3303  conda install sra-toolkit
+ 3304  git clone https://github.com/s-andrews/sradownloader.git
+ 3305  sradownloader --outdir TEST_DOWNLOAD SraRunTable.txt
+ 3306  rm -r sradownloader/
+ 3307  conda install sra-tools
+ 3308  sra-tools
+ 3309  sratools
+ 3310  fasterq-dump
+ 3311  vim sra_site.txt
+ 3312  grep "ACCE" sra_site.txt
+ 3313  grep "Accession" sra_site.txt
+ 3314  vim alex_dmso_phi6_accessions.txt
+ 3315  cat alex_dmso_phi6_accessions.txt
+ 3316  vim alex_dmso_phi6_accessions.txt
+ 3317  cat alex_dmso_phi6_accessions.txt
+ 3318  srr_list="SRX6475127
+ 3319   SRX6475126
+ 3320   SRX5807414
+ 3321   SRX5807413
+ 3322   SRX5807412
+ 3323   SRX5807411
+ 3324   SRX5807410
+ 3325   SRX5807409
+ 3326   SRX5522175
+ 3327   SRX5522174
+ 3328   SRX5522173
+ 3329   SRX5522172"
+ 3330  for i in ${srr_list}; do echo $i; done
+ 3331  for i in ${srr_list}; do echo $i; echo; done
+ 3332  for i in ${srr_list}; do echo $i; fasterq-dump ${i}; done
+ 3333  vim alex_dmso_phi6_SRR_accessions.txt
+ 3334  ls
+ 3335  rm alex_dmso_phi6_accessions.txt
+ 3336  cat sra_site.txt
+ 3337  rm sra_site.txt
+ 3338  ls
+ 3339  cat alex_dmso_phi6_SRR_accessions.txt
+ 3340  srr_list="SRR9717273
+ 3341  SRR9717274
+ 3342  SRR9030131
+ 3343  SRR9030132
+ 3344  SRR9030133
+ 3345  SRR9030134
+ 3346  SRR9030135
+ 3347  SRR9030136
+ 3348  SRR8729117
+ 3349  SRR8729118
+ 3350  SRR8729119
+ 3351  SRR8729120"
+ 3352  for i in ${srr_list}; do echo $i; echo; done
+ 3353  for i in ${srr_list}; do echo $i; fasterq-dump ${i}; done
+ 3354  for i in ${srr_list}; do echo $i; prefetch ${i}; done
+ 3355  ls
+ 3356  cat SRR872917
+ 3357  l
+ 3358  cat SRR8729117
+ 3359  cd SRR8729119/
+ 3360  ls
+ 3361  cat SRR8729119.sra
+ 3362  for i in ${srr_list}; do echo $i; prefetch --type fastq ${i}; done
+ 3363  for i in ${srr_list}; do echo $i; fasterq-dump --split-files ${i}/${i}.sra; done
+ 3364  ls
+ 3365  cd ..
+ 3366  for i in ${srr_list}; do echo $i; fasterq-dump --split-files ${i}/${i}.sra; done
+ 3367  ls
+ 3368  head SRR*.fastq
+ 3369  exit
+ 3370  srun -c 1 -t 10:00:00 --mem=10000 --pty /bin/bash
+ 3371  cd /group/sldmunozgrp/cm_cysto_miseq_M1419P_Mattson/data_redemuxed/
+ 3372  ls
+ 3373  cd Data/
+ 3374  ls
+ 3375  cd b4093u4rje/240411_M01533_0123_MS3570686-300V2/Unaligned2/Project_SMCM_M1419P_Mattson/
+ 3376  ls
+ 3377  du -sh *
+ 3378  vat @md5Sum.md5
+ 3379  cat @md5Sum.md5
+ 3380  md5sum -c *
+ 3381  ls
+ 3382  cd ../../../../.
+ 3383  cd ./../
+ 3384  cd ../..
+ 3385  cd cm_cysto_all_illumina/
+ 3386  cd raw_fastqs/
+ 3387  ls
+ 3388  cd ../..
+ 3389  ls
+ 3390  cd cm_cysto_all_illumina/raw_fastqs/
+ 3391  ls
+ 3392  for pair in ./fastqs/*_*R1*.fastq;
+do sample_temp=${pair%%_L*}; sample=$(basename $sample_temp); echo $sample_temp ; echo $sample; done
+ 3393  for pair in ./fastqs/*_*R1*.fastq;  do sample_temp=${pair%%_L*}; sample=$(basename $sample_temp); echo $sample_temp; echo $sample; done
+ 3394  for pair in ./fastqs/*_*R1*.fastq;  do sample_temp=${pair%%_L*}; sample=$(basename $sample_temp); echo $sample; done
+ 3395  for pair in ./fastqs/*_*R1*.fastq;  do sample_temp=${pair%%_L*}; sample=$(basename $sample_temp); echo $sample_temp; done
+ 3396  for pair in *_*R1*.fastq;  do sample_temp=${pair%%_L*}; sample=$(basename $sample_temp); echo $sample_temp; done
+ 3397  for pair in *_*R1*.fastq;  do sample_temp=${pair%%_*}; echo $sample_temp; done
+ 3398  ls
+ 3399  for pair in *_*R1*.fastq;  do sample=${pair%%L_*}; echo $sample; code=${pair%%_*}; echo ${code}; done
+ 3400  for pair in *_*R1*.fastq;  do sample=${pair%%_L*}; echo $sample; code=${pair%%_*}; echo ${code}; done
+ 3401  lsfor pair in *_*R1*.fastq;  do sample=${pair%%_L*}; echo $sample; code=${pair%%_*}; echo ${code}; done
+ 3402  ls
+ 3403  for pair in *_*R1*.fastq;   do sample=${pair%%_L*};  echo $sample;  code=${pair%%_*};  echo ${code};  mv ${sample}_L001_R1_001.fastq ${code}miseq1382_SXX_L001_R1_001.fastq; mv ${sample}_L001_R2_001.fastq ${code}miseq1382_SXX_L001_R2_001.fastq; done
+ 3404  ls
+ 3405  for pair in *_*R1*.fastq.gz;   do sample=${pair%%_L*};  echo $sample;  code=${pair%%_*};  echo ${code};  mv ${sample}_L001_R1_001.fastq.gz ${code}miseq1419_SXX_L001_R1_001.fastq.gz; mv ${sample}_L001_R2_001.fastq.gz ${code}miseq1419_SXX_L001_R2_001.fastq.gz; done
+ 3406  ls
+ 3407  for pair in SRR*.fastq;   do sample=${pair%%_*};  echo $sample;  code=${pair%%_*};  echo ${code}; done
+ 3408  for pair in SRR*.fastq; code=${pair%%_*};  echo ${code}; done
+ 3409  for pair in SRR*.fastq; do code=${pair%%_*};  echo ${code}; done
+ 3410  for pair in SRR*_1.fastq; do code=${pair%%_*};  echo ${code}; done
+ 3411  for pair in SRR*_1.fastq;  do code=${pair%%_*};   echo ${code};  mv ${code}_1.fastq ${code}alexDMSO_SXX_L001_R1_001.fastq; mv ${code}_2.fastq ${code}alexDMSO_SXX_L001_R2_001.fastq; done
+ 3412  ls
+ 3413  mkdir nyu_test
+ 3414  cd nyu_test/
+ 3415  ls
+ 3416  wget https://drive.google.com/file/d/1bQy7GrdnCgg6Nf6Zkvai7BQSfljqXr6p/view?usp=drive_link
+ 3417  history
+
+
+
+
+    3307  conda install sra-tools
+ 3308  sra-tools
+ 3309  sratools
+ 3310  fasterq-dump
+ 3311  vim sra_site.txt
+ 3312  grep "ACCE" sra_site.txt
+ 3313  grep "Accession" sra_site.txt
+ 3314  vim alex_dmso_phi6_accessions.txt
+ 3315  cat alex_dmso_phi6_accessions.txt
+ 3316  vim alex_dmso_phi6_accessions.txt
+ 3317  cat alex_dmso_phi6_accessions.txt
+ 3318  srr_list="SRX6475127
+ 3319   SRX6475126
+ 3320   SRX5807414
+ 3321   SRX5807413
+ 3322   SRX5807412
+ 3323   SRX5807411
+ 3324   SRX5807410
+ 3325   SRX5807409
+ 3326   SRX5522175
+ 3327   SRX5522174
+ 3328   SRX5522173
+ 3329   SRX5522172"
+ 3330  for i in ${srr_list}; do echo $i; done
+ 3331  for i in ${srr_list}; do echo $i; echo; done
+ 3332  for i in ${srr_list}; do echo $i; fasterq-dump ${i}; done
+ 3333  vim alex_dmso_phi6_SRR_accessions.txt
+ 3334  ls
+ 3335  rm alex_dmso_phi6_accessions.txt
+ 3336  cat sra_site.txt
+ 3337  rm sra_site.txt
+ 3338  ls
+ 3339  cat alex_dmso_phi6_SRR_accessions.txt
+ 3340  srr_list="SRR9717273
+ 3341  SRR9717274
+ 3342  SRR9030131
+ 3343  SRR9030132
+ 3344  SRR9030133
+ 3345  SRR9030134
+ 3346  SRR9030135
+ 3347  SRR9030136
+ 3348  SRR8729117
+ 3349  SRR8729118
+ 3350  SRR8729119
+ 3351  SRR8729120"
+ 3352  for i in ${srr_list}; do echo $i; echo; done
+ 3353  for i in ${srr_list}; do echo $i; fasterq-dump ${i}; done
+ 3354  for i in ${srr_list}; do echo $i; prefetch ${i}; done
+ 3355  ls
+ 3356  cat SRR872917
+ 3357  l
+ 3358  cat SRR8729117
+ 3359  cd SRR8729119/
+ 3360  ls
+ 3361  cat SRR8729119.sra
+ 3362  for i in ${srr_list}; do echo $i; prefetch --type fastq ${i}; done
+ 3363  for i in ${srr_list}; do echo $i; fasterq-dump --split-files ${i}/${i}.sra; done
+ 3364  ls
+ 3365  cd ..
+ 3366  for i in ${srr_list}; do echo $i; fasterq-dump --split-files ${i}/${i}.sra; done
+ 3367  ls
+ 3368  head SRR*.fastq
+ 3369  exit
+ 3370  srun -c 1 -t 10:00:00 --mem=10000 --pty /bin/bash
+ 3371  ls
+ 3372  cd /group/sldmunozgrp/cm_cysto_miseq_M1419P_Mattson/
+ 3373  ls
+ 3374  mkdir data_redemuxed
+ 3375  cd data_redemuxed/
+ 3376  wget -r -nH -nc -np -R index.html* "http://slimsdata.genomecenter.ucdavis.edu/Data/b4093u4rje/240411_M01533_0123_MS3570686-300V2/Unaligned2/Project_SMCM_M1419P_Mattson/" &
+ 3377  printf ${srr_list}
+ 3378  cd ../../cm_cysto_all_illumina/
+ 3379  ls
+ 3380  cd raw_fastqs/
+ 3381  ls
+ 3382  cat alex_dmso_phi6_SRR_accessions.txt
+ 3383  md5sum -c *
+ 3384  cat SRR9030134
+ 3385  ls
+ 3386  cd SRR9030134
+ 3387  ls
